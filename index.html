@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0917 成果展示</title>
+<style>
+  :root {
+    --bg: #eef1f7;
+    --panel: #ffffff;
+    --text: #171a26;
+    --muted: #6d7386;
+    --accent: #2f55d4;
+    --accent-2: #7c3aed;
+    --accent-soft: #e6ecff;
+    --border: #dfe3ee;
+    --shadow: 0 10px 30px rgba(23, 26, 38, .08);
+    --radius: 18px;
+    /* 直式影片尺寸：高度與原本畫面相同（70vh），寬度依 9:16 換算 */
+    --h: min(70vh, 760px);
+    --w: calc(var(--h) * 9 / 16);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1118;
+      --panel: #181b26;
+      --text: #f2f3f8;
+      --muted: #9ba1b6;
+      --accent: #8aa2ff;
+      --accent-2: #b48cff;
+      --accent-soft: #232945;
+      --border: #272b3a;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    overflow-x: hidden;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 18px 16px 10px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: .02em;
+  }
+  .stats { display: flex; gap: 14px; color: var(--muted); font-size: 14px; }
+  .stats b { color: var(--accent); font-size: 18px; font-weight: 800; }
+
+  /* ---------- 目前播放資訊列 ---------- */
+  .now {
+    max-width: 1360px;
+    margin: 0 auto 14px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .who { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .who .avatar {
+    width: 52px; height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    font-size: 24px;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .who .name { font-size: 26px; font-weight: 800; line-height: 1.15; }
+  .who .meta { color: var(--muted); font-size: 14px; display: flex; gap: 10px; align-items: center; }
+  .pill {
+    font-size: 12px; font-weight: 700;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 2px 10px; border-radius: 999px;
+  }
+  .nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 14px; font-weight: 600;
+    padding: 9px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: .15s;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .nav label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; margin-left: 6px; }
+  .nav input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+  /* ---------- 橫向輪播 ---------- */
+  .carousel { position: relative; }
+  .track {
+    display: flex;
+    gap: 22px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: 12px calc(50vw - var(--w) / 2) 20px;
+    scrollbar-width: none;
+    cursor: grab;
+  }
+  .track::-webkit-scrollbar { display: none; }
+  .track.dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; }
+
+  .slide {
+    flex: 0 0 var(--w);
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+    transform: scale(.92);
+    opacity: .55;
+    transition: transform .3s, opacity .3s;
+  }
+  .slide.active { transform: scale(1); opacity: 1; }
+  .slide video {
+    width: var(--w);
+    height: var(--h);
+    display: block;
+    object-fit: contain;
+    background: #000;
+  }
+  .slide .no {
+    position: absolute; top: 12px; left: 12px;
+    background: rgba(0,0,0,.6); color: #fff;
+    font-weight: 800; font-size: 13px;
+    padding: 3px 10px; border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+  .slide .cap {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; padding: 12px 16px;
+  }
+  .slide .cap b { font-size: 18px; }
+  .slide .cap small { color: var(--muted); font-size: 12px; }
+  .slide .cap .dur { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+  /* 左右箭頭 */
+  .arrow {
+    position: absolute; top: calc(var(--h) / 2 + 12px);
+    transform: translateY(-50%);
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    display: grid; place-items: center;
+    z-index: 2;
+    transition: .15s;
+  }
+  .arrow:hover { color: var(--accent); border-color: var(--accent); }
+  .arrow.left { left: 16px; }
+  .arrow.right { right: 16px; }
+
+  /* ---------- 名單快速跳轉 ---------- */
+  .chips {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 6px 16px 40px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .chip {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    padding: 7px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    transition: .15s;
+  }
+  .chip i { font-style: normal; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.active i { color: rgba(255,255,255,.8); }
+
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 16px 36px; }
+  kbd {
+    font-family: inherit; font-size: 12px;
+    border: 1px solid var(--border); border-bottom-width: 2px;
+    border-radius: 6px; padding: 1px 6px; background: var(--panel);
+  }
+
+  @media (max-width: 700px) {
+    :root { --h: min(62vh, 620px); }
+    .arrow { display: none; }
+    .who .name { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>09 / 17 成果展示</h1>
+  <div class="stats">
+    <span><b id="statPeople">0</b> 位同學</span>
+    <span><b id="statWorks">0</b> 支作品</span>
+  </div>
+</header>
+
+<div class="now">
+  <div class="who">
+    <div class="avatar" id="avatar">鄭</div>
+    <div>
+      <div class="name" id="name">鄭XX</div>
+      <div class="meta">
+        <span id="counter">第 1 / 11 支</span>
+        <span class="pill" id="workPill" hidden>作品 1</span>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="btn" id="prev">‹ 上一支</button>
+    <button class="btn primary" id="next">下一支 ›</button>
+    <button class="btn" id="fs" title="全螢幕">⛶ 全螢幕</button>
+    <label><input type="checkbox" id="auto" checked> 播完自動下一支</label>
+  </div>
+</div>
+
+<div class="carousel">
+  <button class="arrow left" id="arrowL" aria-label="上一支">‹</button>
+  <div class="track" id="track"></div>
+  <button class="arrow right" id="arrowR" aria-label="下一支">›</button>
+</div>
+
+<div class="chips" id="chips"></div>
+
+<footer>左右滑動或按 <kbd>←</kbd> <kbd>→</kbd> 切換作品、<kbd>空白鍵</kbd> 播放 / 暫停。影片與本網頁需放在同一個資料夾。</footer>
+
+<script>
+  // ===== 只要改這裡：作品順序與檔名 =====
+  const WORKS = [
+    { name: "鄭XX", file: "鄭XX.mp4" },
+    { name: "楊XX", file: "楊XX.mp4",   work: 1 },
+    { name: "楊XX", file: "楊XX-2.mp4", work: 2 },
+    { name: "元XX", file: "元XX.mp4" },
+    { name: "劉XX", file: "劉XX.mp4" },
+    { name: "李XX", file: "李XX.mp4" },
+    { name: "林XX", file: "林XX.mp4" },
+    { name: "許XX", file: "許XX.mp4" },
+    { name: "郭XX", file: "郭XX.mp4",   work: 1 },
+    { name: "郭XX", file: "郭XX-2.mp4", work: 2 },
+    { name: "顏X",  file: "顏X.mp4" },
+  ];
+  // =====================================
+
+  const $ = s => document.querySelector(s);
+  const track = $("#track");
+  const chips = $("#chips");
+  let cur = 0;
+  const slides = [], videos = [], chipEls = [];
+
+  $("#statWorks").textContent = WORKS.length;
+  $("#statPeople").textContent = WORKS.length;
+
+  const fmt = s => isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "";
+  const label = w => w.work ? `作品 ${w.work}` : "作品";
+
+  // 建立輪播卡片與快速跳轉按鈕
+  WORKS.forEach((w, i) => {
+    const s = document.createElement("div");
+    s.className = "slide";
+    s.dataset.i = i;
+    s.innerHTML = `
+      <span class="no">${String(i + 1).padStart(2, "0")} / ${WORKS.length}</span>
+      <video controls playsinline preload="metadata" src="${w.file}"></video>
+      <div class="cap">
+        <div><b>${w.name}</b> <small>${label(w)}</small></div>
+        <span class="dur"></span>
+      </div>`;
+    const v = s.querySelector("video");
+    v.addEventListener("loadedmetadata", () => s.querySelector(".dur").textContent = fmt(v.duration));
+    v.addEventListener("play", () => { if (cur !== i) goTo(i); videos.forEach((o, j) => j !== i && o.pause()); });
+    v.addEventListener("ended", () => { if ($("#auto").checked && i < WORKS.length - 1) goTo(i + 1, true); });
+    s.addEventListener("click", e => { if (e.target === v) return; if (cur !== i) goTo(i); });
+    track.appendChild(s);
+    slides.push(s); videos.push(v);
+
+    const c = document.createElement("button");
+    c.className = "chip";
+    c.innerHTML = `<i>${String(i + 1).padStart(2, "0")}</i>${w.name}${w.work ? " · " + w.work : ""}`;
+    c.addEventListener("click", () => goTo(i, true));
+    chips.appendChild(c);
+    chipEls.push(c);
+  });
+
+  function setActive(i) {
+    cur = i;
+    const w = WORKS[i];
+    slides.forEach((s, j) => s.classList.toggle("active", j === i));
+    chipEls.forEach((c, j) => c.classList.toggle("active", j === i));
+    videos.forEach((v, j) => { if (j !== i) v.pause(); });
+    $("#avatar").textContent = w.name[0];
+    $("#name").textContent = w.name;
+    $("#counter").textContent = `第 ${i + 1} / ${WORKS.length} 支`;
+    const pill = $("#workPill");
+    pill.hidden = !w.work;
+    pill.textContent = w.work ? `作品 ${w.work}` : "";
+    document.title = `${w.name} · 成果展示`;
+  }
+
+  let pendingPlay = false;
+  function goTo(i, play = false) {
+    i = Math.max(0, Math.min(WORKS.length - 1, i));
+    pendingPlay = play;
+    slides[i].scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    setActive(i);
+    if (play) videos[i].play().catch(() => {});
+  }
+
+  // 滑動時偵測目前置中的卡片
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && e.intersectionRatio >= .6) {
+        const i = +e.target.dataset.i;
+        if (i !== cur) setActive(i);
+      }
+    });
+  }, { root: track, threshold: [.6] });
+  slides.forEach(s => io.observe(s));
+
+  // 滑鼠拖曳滑動
+  let dragX = 0, dragS = 0, dragging = false;
+  track.addEventListener("pointerdown", e => {
+    if (e.target.tagName === "VIDEO") return;
+    dragging = true; dragX = e.clientX; dragS = track.scrollLeft;
+    track.classList.add("dragging"); track.setPointerCapture(e.pointerId);
+  });
+  track.addEventListener("pointermove", e => { if (dragging) track.scrollLeft = dragS - (e.clientX - dragX); });
+  const endDrag = () => { if (!dragging) return; dragging = false; track.classList.remove("dragging"); };
+  track.addEventListener("pointerup", endDrag);
+  track.addEventListener("pointercancel", endDrag);
+
+  // 滾輪上下 → 左右滑
+  track.addEventListener("wheel", e => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); goTo(cur + (e.deltaY > 0 ? 1 : -1)); }
+  }, { passive: false });
+
+  $("#prev").addEventListener("click", () => goTo(cur - 1, true));
+  $("#next").addEventListener("click", () => goTo(cur + 1, true));
+  $("#arrowL").addEventListener("click", () => goTo(cur - 1, true));
+  $("#arrowR").addEventListener("click", () => goTo(cur + 1, true));
+  $("#fs").addEventListener("click", () => {
+    const v = videos[cur];
+    if (v.requestFullscreen) v.requestFullscreen();
+    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+  });
+
+  document.addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); goTo(cur + 1, true); }
+    if (e.key === "ArrowLeft")  { e.preventDefault(); goTo(cur - 1, true); }
+    if (e.key === " ") { e.preventDefault(); const v = videos[cur]; v.paused ? v.play() : v.pause(); }
+  });
+
+  setActive(0);
+  slides[0].scrollIntoView({ inline: "center", block: "nearest", behavior: "instant" });
+</script>
+</body>
+</html>
