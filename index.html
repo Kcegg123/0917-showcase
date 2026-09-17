@@ -220,9 +220,28 @@
   }
 
   @media (max-width: 700px) {
-    :root { --h: min(62vh, 620px); }
+    :root {
+      --h: min(calc(100dvh - 150px), calc((100vw - 40px) * 16 / 9));
+      --w: calc(var(--h) * 9 / 16);
+    }
+    header { padding: 10px 14px 4px; align-items: center; }
+    h1 { font-size: 15px; }
+    .stats { font-size: 12px; gap: 10px; }
+    .stats b { font-size: 13px; }
+    .now { margin-bottom: 6px; padding: 0 14px; }
+    .who { gap: 8px; }
+    .who .avatar { width: 32px; height: 32px; font-size: 15px; border-radius: 10px; }
+    .who .name { font-size: 17px; }
+    .who .meta { font-size: 12px; gap: 6px; }
+    .nav .btn, .nav label { display: none; }
+    .nav #fs { display: inline-block; padding: 6px 10px; font-size: 12px; }
+    .track { gap: 12px; padding: 4px calc(50vw - var(--w) / 2) 10px; }
+    .slide .cap { padding: 8px 12px; }
+    .slide .cap b { font-size: 15px; }
     .arrow { display: none; }
-    .who .name { font-size: 22px; }
+    .chips { padding: 4px 12px 20px; gap: 6px; }
+    .chip { padding: 5px 10px; font-size: 12px; gap: 5px; }
+    footer { display: none; }
   }
 </style>
 </head>
@@ -301,7 +320,7 @@
     s.dataset.i = i;
     s.innerHTML = `
       <span class="no">${String(i + 1).padStart(2, "0")} / ${WORKS.length}</span>
-      <video controls playsinline preload="metadata" src="${w.file}"></video>
+      <video controls playsinline preload="metadata" poster="posters/${w.file.replace(/\.mp4$/, "")}.jpg" src="${w.file}"></video>
       <div class="cap">
         <div><b>${w.name}</b> <small>${label(w)}</small></div>
         <span class="dur"></span>
