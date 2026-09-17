@@ -261,7 +261,6 @@
       <div class="name" id="name">鄭XX</div>
       <div class="meta">
         <span id="counter">第 1 / 11 支</span>
-        <span class="pill" id="workPill" hidden>作品 1</span>
       </div>
     </div>
   </div>
@@ -287,15 +286,15 @@
   // ===== 只要改這裡：作品順序與檔名 =====
   const WORKS = [
     { name: "鄭XX", file: "鄭XX.mp4" },
-    { name: "楊XX", file: "楊XX.mp4",   work: 1 },
-    { name: "楊XX", file: "楊XX-2.mp4", work: 2 },
+    { name: "楊XX", file: "楊XX.mp4" },
+    { name: "楊XX", file: "楊XX-2.mp4" },
     { name: "元XX", file: "元XX.mp4" },
     { name: "劉XX", file: "劉XX.mp4" },
     { name: "李XX", file: "李XX.mp4" },
     { name: "林XX", file: "林XX.mp4" },
     { name: "許XX", file: "許XX.mp4" },
-    { name: "郭XX", file: "郭XX.mp4",   work: 1 },
-    { name: "郭XX", file: "郭XX-2.mp4", work: 2 },
+    { name: "郭XX", file: "郭XX.mp4" },
+    { name: "郭XX", file: "郭XX-2.mp4" },
     { name: "顏X",  file: "顏X.mp4" },
   ];
   // =====================================
@@ -309,7 +308,6 @@
   $("#statPeople").textContent = WORKS.length;
 
   const fmt = s => isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "";
-  const label = w => w.work ? `作品 ${w.work}` : "作品";
 
   // 建立輪播卡片與快速跳轉按鈕
   WORKS.forEach((w, i) => {
@@ -320,7 +318,7 @@
       <span class="no">${String(i + 1).padStart(2, "0")} / ${WORKS.length}</span>
       <video controls playsinline preload="metadata" poster="posters/${w.file.replace(/\.mp4$/, "")}.jpg" src="${w.file}"></video>
       <div class="cap">
-        <div><b>${w.name}</b> <small>${label(w)}</small></div>
+        <div><b>${w.name}</b></div>
         <span class="dur"></span>
       </div>`;
     const v = s.querySelector("video");
@@ -333,7 +331,7 @@
 
     const c = document.createElement("button");
     c.className = "chip";
-    c.innerHTML = `<i>${String(i + 1).padStart(2, "0")}</i>${w.name}${w.work ? " · " + w.work : ""}`;
+    c.innerHTML = `<i>${String(i + 1).padStart(2, "0")}</i>${w.name}`;
     c.addEventListener("click", () => goTo(i, true));
     chips.appendChild(c);
     chipEls.push(c);
@@ -348,25 +346,26 @@
     $("#avatar").textContent = w.name[0];
     $("#name").textContent = w.name;
     $("#counter").textContent = `第 ${i + 1} / ${WORKS.length} 支`;
-    const pill = $("#workPill");
-    pill.hidden = !w.work;
-    pill.textContent = w.work ? `作品 ${w.work}` : "";
     document.title = `${w.name} · 郭博昭-AI輔助儀器設計(0918)`;
   }
 
-  let pendingPlay = false;
+  // 程式捲動期間鎖住置中偵測，避免連續點擊時索引被中途改掉
+  let lock = 0;
+  const slideLeft = i => slides[i].offsetLeft - (track.clientWidth - slides[i].offsetWidth) / 2;
   function goTo(i, play = false) {
     i = Math.max(0, Math.min(WORKS.length - 1, i));
-    pendingPlay = play;
-    slides[i].scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
     setActive(i);
+    clearTimeout(lock);
+    lock = setTimeout(() => { lock = 0; }, 700);
+    track.scrollTo({ left: slideLeft(i), behavior: "smooth" });
     if (play) videos[i].play().catch(() => {});
   }
+  track.addEventListener("scrollend", () => { clearTimeout(lock); lock = 0; });
 
   // 滑動時偵測目前置中的卡片
   const io = new IntersectionObserver(entries => {
     entries.forEach(e => {
-      if (e.isIntersecting && e.intersectionRatio >= .6) {
+      if (!lock && e.isIntersecting && e.intersectionRatio >= .6) {
         const i = +e.target.dataset.i;
         if (i !== cur) setActive(i);
       }
@@ -409,7 +408,7 @@
   });
 
   setActive(0);
-  slides[0].scrollIntoView({ inline: "center", block: "nearest", behavior: "instant" });
+  track.scrollTo({ left: slideLeft(0), behavior: "instant" });
 </script>
 </body>
 </html>
